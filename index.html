@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#153b66">
+  <meta name="description" content="Registra i tempi delle corse e delle fermate degli autobus.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>TempoCorsa</title>
+<style>
+:root {
+  --site-primary: #173f6b;
+  --site-on-primary: #ffffff;
+  --site-secondary: #dceaf5;
+  --site-on-secondary: #18334d;
+  --site-background: #edf3f8;
+  --site-on-background: #172b3d;
+  --site-font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --site-font-heading: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --site-heading-scale: 1;
+  --site-spacing-scale: 1;
+  --site-radius-scale: 1;
+  --site-decoration-opacity: 1;
+  --surface: #ffffff;
+  --surface-soft: #f5f8fb;
+  --text: #172b3d;
+  --muted: #526779;
+  --line: #dce5ed;
+  --good: #16845b;
+  --danger: #b94747;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; font-family: var(--site-font-body); background: var(--site-background); color: var(--site-on-background); }
+#app { min-height: 100vh; background-color: var(--site-background); color: var(--site-on-background); border-radius: 0; }
+header { background: var(--site-primary); color: var(--site-on-primary); padding: calc(22px * var(--site-spacing-scale)) max(18px, calc((100vw - 850px)/2)); }
+.head-inner { max-width: 850px; margin: auto; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.brand { display:flex; align-items:center; gap:12px; }
+.logo { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; background:rgba(255,255,255,.15); font-size:22px; }
+h1 { font-family:var(--site-font-heading); font-size:calc(24px * var(--site-heading-scale)); line-height:1.1; margin:0; letter-spacing:-.5px; }
+header p { margin:5px 0 0; color:rgba(255,255,255,.76); font-size:13px; }
+main { max-width:850px; margin:0 auto; padding:22px 16px 48px; }
+.topline { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+h2 { font-size:calc(21px * var(--site-heading-scale)); margin:0; letter-spacing:-.4px; }
+h3 { font-size:16px; margin:0 0 12px; }
+.sub { color:var(--muted); font-size:13px; margin:6px 0 0; }
+button, input, textarea { font:inherit; }
+button { border:0; border-radius:12px; cursor:pointer; font-weight:650; transition:transform .08s, opacity .15s; }
+button:active { transform:scale(.98); }
+button:disabled { opacity:.42; cursor:not-allowed; }
+.primary { background:var(--site-primary); color:var(--site-on-primary); padding:13px 17px; }
+.secondary { background:var(--site-secondary); color:var(--site-on-secondary); padding:11px 14px; }
+.ghost { background:transparent; color:var(--site-primary); border:1px solid var(--line); padding:10px 13px; }
+.danger { background:#f9e8e8; color:#8f2929; padding:10px 13px; }
+.small { padding:8px 10px; font-size:13px; }
+.full { width:100%; }
+.card { color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:calc(18px * var(--site-radius-scale)); padding:18px; margin-bottom:14px; box-shadow:0 3px 14px rgba(20,50,80,.045); }
+.route-card { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; }
+.route-card:hover { border-color:var(--site-primary); }
+.line-actions { display:flex; align-items:center; gap:7px; flex:0 0 auto; }
+.line-actions button { white-space:nowrap; }
+.route-title { font-weight:750; font-size:16px; }
+.route-meta { color:var(--muted); font-size:13px; margin-top:5px; }
+.pill { font-size:11px; font-weight:700; padding:5px 8px; border-radius:20px; background:var(--site-secondary); color:var(--site-on-secondary); white-space:nowrap; }
+.hidden { display:none !important; }
+.field { display:grid; gap:6px; margin:12px 0; }
+label { font-size:13px; font-weight:700; color:var(--muted); }
+input, textarea { width:100%; border:1px solid var(--line); background:var(--surface-soft); color:var(--text); padding:12px; border-radius:11px; outline:none; }
+input:focus, textarea:focus { border-color:var(--site-primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--site-primary) 15%, transparent); }
+textarea { min-height:130px; resize:vertical; }
+.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.row > * { flex:1; }
+.back { color:var(--site-primary); background:none; padding:5px 0 14px; font-weight:700; }
+.stop-list { list-style:none; padding:0; margin:0; }
+.detail-stop-list { max-height:230px; overflow-y:auto; padding-right:5px; }
+.stop-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.stop-row:last-child { border-bottom:0; }
+.stop-num { width:28px; height:28px; flex:0 0 28px; border-radius:50%; background:var(--site-secondary); color:var(--site-on-secondary); display:grid; place-items:center; font-size:12px; font-weight:800; }
+.stop-name { flex:1; font-weight:600; }
+.stop-actions { display:flex; gap:5px; }
+.icon-btn { padding:7px 9px; background:var(--surface-soft); color:var(--muted); border:1px solid var(--line); }
+.timer { text-align:center; padding:22px 10px 18px; }
+.timer-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1.4px; font-weight:750; }
+.timer-value { font-size:clamp(42px, 12vw, 64px); letter-spacing:-2px; font-weight:800; font-variant-numeric:tabular-nums; margin:8px 0; color:var(--site-primary); }
+.timer-date { color:var(--muted); font-size:13px; }
+.big-action { width:100%; padding:19px 16px; font-size:17px; border-radius:15px; background:var(--good); color:white; margin-top:12px; }
+.big-action.start { background:var(--site-primary); }
+.next-stop { background:var(--surface-soft); border-radius:14px; padding:13px 15px; margin:10px 0; }
+.next-stop small { color:var(--muted); display:block; margin-bottom:4px; }
+.next-stop strong { font-size:16px; }
+.origin-stop { background:var(--site-secondary); color:var(--site-on-secondary); border-radius:14px; padding:12px 15px; margin:10px 0; }
+.origin-stop small { display:block; font-size:11px; font-weight:750; text-transform:uppercase; margin-bottom:4px; opacity:.75; }
+.skip-panel { margin-top:14px; padding-top:13px; border-top:1px solid var(--line); }
+.skip-panel .row { align-items:end; }
+.run-stop-list { list-style:none; padding:0; margin:10px 0 0; }
+.run-stop-item { display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line); }
+.run-stop-item:last-child { border-bottom:0; }
+.run-stop-choice { flex:1; display:flex; align-items:center; gap:12px; width:100%; padding:13px 8px; border-radius:10px; text-align:left; background:transparent; color:var(--text); font-weight:450; }
+.run-stop-choice:disabled { opacity:1; cursor:default; }
+.run-stop-item.completed .run-stop-choice { color:var(--muted); }
+.run-stop-item.current .run-stop-choice { color:var(--text); font-weight:800; background:var(--surface-soft); }
+.run-stop-item.upcoming .run-stop-choice:active { background:var(--surface-soft); }
+.run-stop-marker { width:27px; height:27px; flex:0 0 27px; display:grid; place-items:center; border-radius:50%; background:var(--site-secondary); color:var(--site-on-secondary); font-size:12px; font-weight:800; }
+.run-stop-item.completed .run-stop-marker { background:var(--line); color:var(--muted); }
+.run-stop-item.current .run-stop-marker { background:var(--site-primary); color:white; }
+.run-stop-hint { display:block; margin:2px 0 0 39px; color:var(--muted); font-size:11px; }
+.record { display:grid; grid-template-columns:1fr; gap:4px 12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.record:last-child { border:0; }
+.record strong { font-size:14px; }
+.record small { color:var(--muted); font-size:12px; }
+.record time { color:var(--text); font-weight:750; font-variant-numeric:tabular-nums; text-align:right; }
+.record .elapsed { grid-column:1 / -1; color:var(--muted); font-size:12px; }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }
+.stat { color:var(--text); background:var(--surface-soft); border-radius:12px; padding:12px; }
+.stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; font-weight:750; }
+.stat strong { display:block; font-size:20px; margin-top:4px; font-variant-numeric:tabular-nums; }
+.empty { text-align:center; color:var(--muted); padding:28px 12px; }
+footer { max-width:850px; margin:0 auto; padding:0 16px 28px; color:var(--muted); font-size:12px; text-align:center; }
+.start-overlay { position:fixed; inset:0; z-index:1000; background:rgba(10,25,40,.55); display:flex; align-items:center; justify-content:center; padding:18px; }
+.start-dialog { width:min(100%,440px); background:var(--surface); color:var(--text); border-radius:18px; padding:22px; box-shadow:0 18px 55px rgba(0,0,0,.22); }
+.start-dialog h2 { margin-bottom:8px; }
+.start-dialog .field { margin:18px 0; }
+.start-dialog select { width:100%; border:1px solid var(--line); background:var(--surface-soft); color:var(--text); padding:13px; border-radius:11px; font:inherit; }
+.notice { background:#fff5df; color:#72521b; border:1px solid #f0dfb8; padding:11px 13px; border-radius:12px; font-size:12px; line-height:1.45; margin-bottom:14px; }
+@media (max-width:520px) {
+  main { padding:18px 13px 36px; }
+  .card { padding:15px; }
+  .topline { align-items:flex-start; }
+  .topline .primary { padding:11px 12px; font-size:13px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="head-inner">
+    <div class="brand"><div class="logo">🚌</div><div><h1>TempoCorsa</h1><p>Rilevamento tempi e fermate</p></div></div>
+    <span class="pill" style="background:rgba(255,255,255,.16);color:white">PERSONALE</span>
+  </div>
+</header>
+<main>
+  <section id="lines">
+    <div class="topline"><div><h2>Le tue linee</h2><p class="sub">Scegli una linea per visualizzare le corse associate.</p></div><button class="primary" onclick="addLine()">＋ Nuova linea</button></div>
+    <div id="lineList"></div>
+  </section>
+
+  <section id="home" class="hidden">
+    <button class="back" onclick="showLines()">← Le tue linee</button>
+    <div class="topline"><div><h2 id="lineRoutesTitle">Le tue corse</h2><p class="sub">Corse e percorsi appartenenti a questa linea.</p></div><button class="primary" onclick="showEditor()">＋ Nuova corsa</button></div>
+    <div id="routeList"></div>
+    <div class="card">
+      <h3>💾 I tuoi dati</h3>
+      <p class="sub">Le corse e i rilevamenti vengono salvati in questo browser, sul dispositivo. Puoi esportare una copia di sicurezza o importarla in seguito.</p>
+      <div class="row" style="margin-top:13px">
+        <button class="secondary" onclick="exportData()">Esporta dati</button>
+        <button class="ghost" onclick="document.getElementById('importFile').click()">Importa dati</button>
+        <input id="importFile" class="hidden" type="file" accept="application/json" onchange="importData(event)">
+      </div>
+    </div>
+    <div class="notice">I dati vengono salvati su questo dispositivo. Puoi esportare una copia di sicurezza dal pulsante “Esporta dati”.</div>
+  </section>
+
+  <section id="editor" class="hidden">
+    <button class="back" onclick="goHome()">← Torna alle corse</button>
+    <div class="card">
+      <h2 id="editorTitle">Nuova corsa</h2>
+      <div class="field"><label for="routeName">Nome della corsa / linea</label><input id="routeName" placeholder="Es. LS029 – Ome / Rodengo"></div>
+      <div class="field"><label for="routeCode">Codice o descrizione (facoltativo)</label><input id="routeCode" placeholder="Es. Direzione Padergnone"></div>
+      <div class="field"><label for="stopInput">Elenco fermate (una per riga, nell'ordine di percorrenza)</label><textarea id="stopInput" placeholder="Monticelli – Via IV Novembre cimitero&#10;Monticelli – località Torre&#10;Ome – Via Maglio"></textarea></div>
+      <div class="row"><button class="primary" onclick="saveRoute()">Salva corsa</button><button class="ghost" onclick="goHome()">Annulla</button><button id="deleteRouteBtn" class="danger hidden" onclick="deleteRoute()">Elimina corsa</button></div>
+    </div>
+  </section>
+
+  <section id="detail" class="hidden">
+    <button class="back" onclick="goHome()">← Le tue corse</button>
+    <div class="topline"><div><h2 id="detailName"></h2><p id="detailCode" class="sub"></p></div><button class="ghost small" onclick="editCurrent()">Modifica</button></div>
+    <div class="card">
+      <h3>Fermate della corsa</h3>
+      <ol id="detailStops" class="stop-list detail-stop-list"></ol>
+      <div class="row" style="margin-top:12px"><button class="primary full" onclick="startTrip()">▶ Avvia corsa</button></div>
+    </div>
+    <div id="pastTrips" class="card"></div>
+  </section>
+
+  <section id="running" class="hidden">
+    <button class="back" onclick="confirmLeaveRun()">← Torna alla corsa</button>
+    <div class="card timer">
+      <div class="timer-label">Tempo dalla partenza</div>
+      <div class="timer-value" id="clock">00:00:00</div>
+      <div class="timer-date" id="startDate"></div>
+    </div>
+    <div class="card">
+      <div class="origin-stop"><small>Partenza · capolinea</small><strong id="originStop">—</strong></div>
+      <div class="next-stop"><small id="progressText">PROSSIMA FERMATA</small><strong id="nextStop">—</strong></div>
+      <button id="recordBtn" class="big-action" onclick="recordStop()">● Registra fermata</button>
+      <p class="sub" style="text-align:center">Premi una volta quando arrivi alla fermata indicata.</p>
+      <div class="skip-panel">
+        <h3>Percorso e prossime fermate</h3>
+        <p class="sub">La fermata grigia è già stata completata, quella in grassetto è la prossima da registrare. Tocca una fermata successiva per saltare quelle intermedie e riprendere da lì.</p>
+        <ol id="runStopList" class="run-stop-list"></ol>
+      </div>
+      <div class="skip-panel">
+        <div class="topline"><h3>Cronologia fermate</h3><span class="pill" id="countPill">0 registrate</span></div>
+        <div id="liveRecords"><div class="empty">Ancora nessuna fermata registrata.</div></div>
+      </div>
+      <div class="stats"><div class="stat"><span>Durata corsa</span><strong id="elapsedStat">00:00</strong></div><div class="stat"><span>Ultimo tratto</span><strong id="lastStat">—</strong></div></div>
+      <button class="danger full" onclick="finishTrip()">Termina corsa</button>
+    </div>
+  </section>
+
+  <section id="result" class="hidden">
+    <button class="back" onclick="goHome()">← Home</button>
+    <div class="card">
+      <h2>Corsa completata</h2><p class="sub" id="resultSubtitle"></p>
+      <div class="stats"><div class="stat"><span>Durata totale</span><strong id="resultDuration"></strong></div><div class="stat"><span>Fermate registrate</span><strong id="resultCount"></strong></div></div>
+      <div id="resultRecords"></div>
+      <button class="primary full" style="margin-top:16px" onclick="showCurrentDetail()">Torna alla corsa</button>
+    </div>
+  </section>
+
+  <section id="archive" class="hidden">
+    <button class="back" onclick="showCurrentDetail()">← Torna alla corsa</button>
+    <h2>Archivio rilevamenti</h2><p class="sub" id="archiveName"></p>
+    <div id="archiveList" style="margin-top:15px"></div>
+  </section>
+  <div id="startChooser" class="start-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="startChooserTitle">
+    <div class="start-dialog">
+      <h2 id="startChooserTitle">Da dove vuoi iniziare?</h2>
+      <p class="sub">Scegli il punto in cui sali sull'autobus. Il cronometro partirà dalla fermata selezionata.</p>
+      <div class="field"><label for="startStopSelect">Fermata di partenza</label><select id="startStopSelect"></select></div>
+      <p class="sub">Il capolinea è la prima fermata. Puoi scegliere anche una qualsiasi fermata successiva.</p>
+      <div class="row" style="margin-top:18px"><button class="primary" onclick="confirmStartTrip()">Avvia</button><button class="ghost" onclick="closeStartChooser()">Annulla</button></div>
+    </div>
+  </div>
+</main>
+<footer>TempoCorsa · I dati restano sul dispositivo, salvo esportazione o cancellazione dei dati del browser.<br><span style="display:inline-block;margin-top:5px">Borboni Alex © Copyright 2026</span></footer>
+</div>
+<script>
+const KEY = "tempocorsa_data_v1";
+const ACTIVE_KEY = "tempocorsa_active_trip_v1";
+const demoStops = [
+  "Monticelli – Via IV Novembre cimitero",
+  "Monticelli – località Torre",
+  "Monticelli – località Villa",
+  "Ome – Via Maglio",
+  "Ome – Via Provinciale centro",
+  "Rodengo – località Corneto",
+  "Rodengo – Viale Europa",
+  "Rodengo – località Padergnone"
+];
+let data = loadData();
+let currentRouteId = null, currentLineId = null, editingId = null, activeTrip = loadActiveTrip(), timerHandle = null;
+function saveActiveTrip(){ if(activeTrip && !activeTrip.finished) localStorage.setItem(ACTIVE_KEY,JSON.stringify(activeTrip)); else localStorage.removeItem(ACTIVE_KEY); }
+function loadActiveTrip(){ try { const t=JSON.parse(localStorage.getItem(ACTIVE_KEY)); return t && !t.finished && t.startedAt ? t : null; } catch(e){ return null; } }
+function normalizeData(saved){
+ if(!Array.isArray(saved.lines)) saved.lines=[];
+ if(!Array.isArray(saved.routes)) saved.routes=[];
+ saved.routes.forEach(r=>{
+  let line=saved.lines.find(x=>x.id===r.lineId);
+  if(!line){
+   const match=String(r.name||"").match(/^([A-Za-z]{1,3}\s?\d{1,4})\b/);
+   const lineName=match?match[1].replace(/\s/g,"").toUpperCase():"Altre linee";
+   line=saved.lines.find(x=>x.name.toLowerCase()===lineName.toLowerCase());
+   if(!line){line={id:crypto.randomUUID(),name:lineName};saved.lines.push(line);}
+   r.lineId=line.id;
+  }
+ });
+ return saved;
+}
+function loadData() {
+ try {
+  const saved = JSON.parse(localStorage.getItem(KEY));
+  if (saved && Array.isArray(saved.routes) && Array.isArray(saved.trips)) return normalizeData(saved);
+ } catch(e) {}
+ return normalizeData({routes:[{id:crypto.randomUUID(),name:"LS029 – Ome / Rodengo",code:"Esempio modificabile · direzione Padergnone",stops:demoStops}],trips:[],lines:[]});
+}
+function persist(){ localStorage.setItem(KEY, JSON.stringify(data)); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function show(id){ ["lines","home","editor","detail","running","result","archive"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+function showLines(){ if(activeTrip && !activeTrip.finished){ if(!confirm("La corsa è ancora in corso. Vuoi tornare alle linee? Il rilevamento continuerà.")) return; } show("lines");renderLines(); }
+function goHome(){ show("home");renderRoutes(); }
+function renderLines(){
+ const el=document.getElementById("lineList");
+ if(!data.lines.length){el.innerHTML='<div class="card empty">Non hai ancora creato linee. Premi “Nuova linea” per iniziare.</div>';return;}
+ const sortedLines=[...data.lines].sort((a,b)=>a.name.localeCompare(b.name,"it",{numeric:true,sensitivity:"base"}));
+ el.innerHTML=sortedLines.map(l=>{const count=data.routes.filter(r=>r.lineId===l.id).length;return `<div class="card route-card" onclick="openLine('${l.id}')"><div><div class="route-title">${esc(l.name)}</div><div class="route-meta">${count} ${count===1?"corsa":"corse"}</div></div><div class="line-actions"><button class="ghost small" onclick="event.stopPropagation();editLine('${l.id}')">Modifica</button><span class="pill">Apri →</span></div></div>`;}).join("");
+}
+function addLine(){
+ const name=prompt("Nome o numero della linea (es. LS029, LS030, 13):");
+ if(name===null)return;const clean=name.trim().toUpperCase();if(!clean){alert("Inserisci il nome della linea.");return;}
+ if(data.lines.some(l=>l.name.toLowerCase()===clean.toLowerCase())){alert("Questa linea esiste già.");return;}
+ data.lines.push({id:crypto.randomUUID(),name:clean});persist();renderLines();
+}
+
+function editLine(id){
+ const line=data.lines.find(l=>l.id===id);if(!line)return;
+ const action=prompt(`Modifica il nome della linea “${line.name}”.\nScrivi il nuovo nome. Per eliminare la linea, cancella il testo e premi OK.`,line.name);
+ if(action===null)return;
+ const clean=action.trim().toUpperCase();
+ if(!clean){
+  const routeIds=data.routes.filter(r=>r.lineId===id).map(r=>r.id);
+  const routeCount=routeIds.length;
+  const tripCount=data.trips.filter(t=>routeIds.includes(t.routeId)).length;
+  if(!confirm(`Eliminare la linea “${line.name}”, le ${routeCount} corse associate e i ${tripCount} relativi rilevamenti? Questa operazione non si può annullare.`))return;
+  data.trips=data.trips.filter(t=>!routeIds.includes(t.routeId));
+  data.routes=data.routes.filter(r=>r.lineId!==id);
+  data.lines=data.lines.filter(l=>l.id!==id);
+  if(currentLineId===id)currentLineId=null;
+  persist();renderLines();return;
+ }
+ if(data.lines.some(l=>l.id!==id&&l.name.toLowerCase()===clean.toLowerCase())){alert("Esiste già una linea con questo nome.");return;}
+ line.name=clean;persist();renderLines();
+}
+function openLine(id){currentLineId=id;const line=data.lines.find(l=>l.id===id);if(!line)return;document.getElementById("lineRoutesTitle").textContent=`Le tue corse · ${line.name}`;show("home");renderRoutes();}
+function renderRoutes(){
+ const el=document.getElementById("routeList");const routes=data.routes.filter(r=>r.lineId===currentLineId).sort((a,b)=>a.name.localeCompare(b.name,"it",{numeric:true,sensitivity:"base"}));
+ if(!routes.length){el.innerHTML='<div class="card empty">Non hai ancora creato corse per questa linea. Premi “Nuova corsa” per aggiungerne una.</div>';return;}
+ el.innerHTML=routes.map(r=>`<div class="card route-card" onclick="openRoute('${r.id}')"><div><div class="route-title">${esc(r.name)}</div><div class="route-meta">${r.code?esc(r.code)+" · ":""}${r.stops.length} fermate</div></div><span class="pill">Apri →</span></div>`).join("");
+}
+function showEditor(id=null){
+ editingId=id; const r=id?data.routes.find(x=>x.id===id):null;
+ document.getElementById("editorTitle").textContent=r?"Modifica corsa":"Nuova corsa";
+ document.getElementById("routeName").value=r?.name||"";
+ document.getElementById("routeCode").value=r?.code||"";
+ document.getElementById("stopInput").value=r?.stops.join("\n")||"";
+ document.getElementById("deleteRouteBtn").classList.toggle("hidden",!r);
+ show("editor");
+}
+function saveRoute(){
+ const name=document.getElementById("routeName").value.trim();
+ const stops=document.getElementById("stopInput").value.split("\n").map(s=>s.trim()).filter(Boolean);
+ if(!name){alert("Inserisci il nome della corsa.");return;}
+ if(!stops.length){alert("Inserisci almeno una fermata.");return;}
+ const code=document.getElementById("routeCode").value.trim();
+ if(editingId){const r=data.routes.find(x=>x.id===editingId);r.name=name;r.code=code;r.stops=stops;}
+ else data.routes.push({id:crypto.randomUUID(),lineId:currentLineId,name,code,stops});
+ persist(); renderRoutes(); show("home");
+}
+function deleteRoute(){
+ if(!editingId)return;
+ const route=data.routes.find(r=>r.id===editingId);if(!route)return;
+ const tripCount=data.trips.filter(t=>t.routeId===editingId).length;
+ if(!confirm(`Eliminare la corsa “${route.name}”${tripCount?` e i suoi ${tripCount} rilevamenti`:""}? Questa operazione non si può annullare.`))return;
+ data.trips=data.trips.filter(t=>t.routeId!==editingId);
+ data.routes=data.routes.filter(r=>r.id!==editingId);
+ editingId=null;
+ persist();renderRoutes();show("home");
+}
+function openRoute(id){
+ currentRouteId=id; const r=data.routes.find(x=>x.id===id); if(!r)return;
+ document.getElementById("detailName").textContent=r.name;
+ document.getElementById("detailCode").textContent=r.code||`${r.stops.length} fermate`;
+ document.getElementById("detailStops").innerHTML=r.stops.map((s,i)=>`<li class="stop-row"><span class="stop-num">${i+1}</span><span class="stop-name">${esc(s)}</span></li>`).join("");
+ const trips=data.trips.filter(t=>t.routeId===id).sort((a,b)=>b.startedAt-a.startedAt);
+ const p=document.getElementById("pastTrips");
+ p.innerHTML=`<div class="topline"><h3>Ultimi rilevamenti</h3>${trips.length?`<button class="ghost small" onclick="showArchive()">Archivio completo</button>`:""}</div>`+
+ (trips.length?trips.slice(0,3).map(t=>`<div class="record"><strong>${new Date(t.startedAt).toLocaleDateString("it-IT")} · ${new Date(t.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}</strong><time>${fmt(t.durationMs)}</time><small>${t.records.length} fermate registrate</small></div>`).join(""):'<p class="sub">Non hai ancora effettuato rilevamenti per questa corsa.</p>');
+ show("detail");
+}
+function editCurrent(){showEditor(currentRouteId);}
+function startTrip(){
+ const r=data.routes.find(x=>x.id===currentRouteId); if(!r||!r.stops.length)return;
+ const select=document.getElementById("startStopSelect");
+ select.innerHTML=r.stops.map((stop,i)=>`<option value="${i}">${i===0?"Capolinea · ":"Fermata "+(i+1)+" · "}${esc(stop)}</option>`).join("");
+ select.value="0";
+ document.getElementById("startChooser").classList.remove("hidden");
+}
+function closeStartChooser(){document.getElementById("startChooser").classList.add("hidden");}
+function confirmStartTrip(){
+ const index=Number(document.getElementById("startStopSelect").value);
+ closeStartChooser();startTripAt(index);
+}
+function startTripAt(startIndex){
+ const r=data.routes.find(x=>x.id===currentRouteId); if(!r||!Number.isInteger(startIndex)||startIndex<0||startIndex>=r.stops.length)return;
+ activeTrip={id:crypto.randomUUID(),routeId:r.id,routeName:r.name,stops:[...r.stops],startedAt:Date.now(),startStopIndex:startIndex,records:[],nextStopIndex:Math.min(startIndex+1,r.stops.length),finished:false}; saveActiveTrip();
+ document.getElementById("startDate").textContent="Partenza: "+new Date(activeTrip.startedAt).toLocaleString("it-IT");
+ document.querySelector(".origin-stop small").textContent=startIndex===0?"Partenza · capolinea":"Partenza · fermata scelta";
+ document.getElementById("originStop").textContent=r.stops[startIndex]||"—";
+ show("running"); updateRunUI(); if(timerHandle)clearInterval(timerHandle);timerHandle=setInterval(updateRunUI,500);
+}
+function fmt(ms){
+ const sec=Math.max(0,Math.floor(ms/1000)), h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+ return [h,m,s].map(n=>String(n).padStart(2,"0")).join(":");
+}
+function fmtShort(ms){const sec=Math.max(0,Math.floor(ms/1000)),m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,"0")}`;}
+function updateRunUI(){
+ if(!activeTrip)return;
+ const elapsed=Date.now()-activeTrip.startedAt;
+ document.getElementById("clock").textContent=fmt(elapsed);
+ document.getElementById("elapsedStat").textContent=fmtShort(elapsed);
+ const n=activeTrip.records.length, total=activeTrip.stops.length, next=activeTrip.nextStopIndex;
+ document.getElementById("countPill").textContent=`${n} registrate · ${Math.max(0,total-next)} da fare`;
+ document.getElementById("progressText").textContent=next<total?`PROSSIMA FERMATA · ${next+1} DI ${total}`:"TUTTE LE FERMATE REGISTRATE";
+ document.getElementById("nextStop").textContent=next<total?activeTrip.stops[next]:"Fine percorso";
+ document.getElementById("recordBtn").disabled=next>=total;
+ document.getElementById("recordBtn").textContent=next>=total?"✓ Percorso completato":"● Registra fermata";
+ document.getElementById("lastStat").textContent=n?fmtShort(activeTrip.records[n-1].legMs):"—";
+ document.getElementById("runStopList").innerHTML=activeTrip.stops.map((s,i)=>{
+  const state=i<next?"completed":i===next?"current":"upcoming";
+  const hint=i<next?"Completata":i===next?"Da registrare ora":"Tocca per riprendere da qui";
+  return `<li class="run-stop-item ${state}"><button class="run-stop-choice" ${i<=next?"disabled":""} onclick="jumpToStop(${i})"><span class="run-stop-marker">${i<next?"✓":i+1}</span><span>${esc(s)}${i===next?'<span class="run-stop-hint">PROSSIMA FERMATA</span>':i<next?'<span class="run-stop-hint">Completata</span>':''}</span></button></li>`;
+ }).join("");
+ const originIndex=activeTrip.startStopIndex??0;
+ document.getElementById("liveRecords").innerHTML=`<div class="record"><strong>${originIndex+1}. ${esc(activeTrip.stops[originIndex]||"Partenza")}</strong><div class="elapsed">Orario: ${new Date(activeTrip.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})} · Partenza${originIndex?` · ${originIndex} fermate precedenti saltate`:""}</div></div>`+(n?activeTrip.records.map(x=>`<div class="record"><strong>${x.stopIndex+1}. ${esc(x.stop)}</strong><div class="elapsed">Orario: ${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})} · Tempo: ${fmtShort(x.legMs)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join(""):"");
+}
+function recordStop(){
+ if(!activeTrip||activeTrip.nextStopIndex>=activeTrip.stops.length)return;
+ const now=Date.now(), prev=activeTrip.records.at(-1), stopIndex=activeTrip.nextStopIndex;
+ activeTrip.records.push({stop:activeTrip.stops[stopIndex],stopIndex,at:now,elapsedMs:now-activeTrip.startedAt,legMs:now-(prev?prev.at:activeTrip.startedAt),skippedBefore:Math.max(0,stopIndex-(prev?prev.stopIndex:(activeTrip.startStopIndex??0))-1)});
+ activeTrip.nextStopIndex=stopIndex+1; saveActiveTrip();
+ updateRunUI();
+ if(activeTrip.nextStopIndex>=activeTrip.stops.length)finishTrip(true,now);
+}
+function jumpToStop(selected){
+ if(!activeTrip)return;
+ if(!Number.isInteger(selected)||selected<activeTrip.nextStopIndex||selected>=activeTrip.stops.length)return;
+ if(selected>activeTrip.nextStopIndex&&!confirm(`Saltare ${selected-activeTrip.nextStopIndex} fermate e riprendere da “${activeTrip.stops[selected]}”?`))return;
+ activeTrip.nextStopIndex=selected;saveActiveTrip();updateRunUI();
+}
+function confirmLeaveRun(){if(confirm("Vuoi tornare alla schermata della corsa? Il cronometro continuerà a funzionare."))openRoute(currentRouteId);}
+function finishTrip(automatic=false, endedAt=null){
+ if(!activeTrip)return;
+ if(!automatic&&!confirm("Terminare e salvare questo rilevamento?"))return;
+ activeTrip.finished=true;activeTrip.endedAt=endedAt??Date.now();activeTrip.durationMs=activeTrip.endedAt-activeTrip.startedAt; saveActiveTrip();
+ data.trips.push(activeTrip);persist();if(timerHandle)clearInterval(timerHandle);timerHandle=null;
+ document.getElementById("resultSubtitle").textContent=activeTrip.routeName+" · "+new Date(activeTrip.startedAt).toLocaleString("it-IT");
+ document.getElementById("resultDuration").textContent=fmt(activeTrip.durationMs);
+ document.getElementById("resultCount").textContent=activeTrip.records.length;
+ const originIndex=activeTrip.startStopIndex??0;
+ document.getElementById("resultRecords").innerHTML=`<div class="record"><strong>${originIndex+1}. ${esc(activeTrip.stops[originIndex])} · Partenza</strong><time>${new Date(activeTrip.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Fermata iniziale${originIndex?` · ${originIndex} fermate precedenti saltate`:""}</div></div>`+activeTrip.records.map((x,i)=>`<div class="record"><strong>${x.stopIndex+1}. ${esc(x.stop)}</strong><time>${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Tratto: ${fmt(x.legMs)} · Dalla partenza: ${fmt(x.elapsedMs)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join("");
+ show("result");
+}
+function showCurrentDetail(){activeTrip=null;saveActiveTrip();openRoute(currentRouteId);}
+function deleteTrip(tripId){
+ const trip=data.trips.find(t=>t.id===tripId);
+ if(!trip||trip.routeId!==currentRouteId)return;
+ const when=new Date(trip.startedAt).toLocaleString("it-IT");
+ if(!confirm(`Eliminare definitivamente il rilevamento del ${when}?`))return;
+ data.trips=data.trips.filter(t=>t.id!==tripId);
+ persist();
+ showArchive();
+}
+function showArchive(){
+ const r=data.routes.find(x=>x.id===currentRouteId);document.getElementById("archiveName").textContent=r?.name||"";
+ const trips=data.trips.filter(t=>t.routeId===currentRouteId).sort((a,b)=>b.startedAt-a.startedAt);
+ document.getElementById("archiveList").innerHTML=trips.map(t=>`<div class="card"><div class="topline"><strong>${new Date(t.startedAt).toLocaleString("it-IT")}</strong><div class="row" style="flex:0 0 auto;gap:7px"><span class="pill">${fmt(t.durationMs)}</span><button class="danger small" onclick="deleteTrip('${t.id}')">Elimina</button></div></div>${t.records.map((x,i)=>`<div class="record"><strong>${(x.stopIndex??i)+1}. ${esc(x.stop)}</strong><time>${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Tratto: ${fmt(x.legMs)} · Dalla partenza: ${fmt(x.elapsedMs)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join("")}</div>`).join("")||'<div class="card empty">Nessun rilevamento salvato.</div>';
+ show("archive");
+}
+function exportData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="tempocorsa-backup.json";a.click();URL.revokeObjectURL(url);
+}
+function importData(e){
+ const file=e.target.files[0];if(!file)return;
+ const reader=new FileReader();reader.onload=()=>{try{const d=JSON.parse(reader.result);if(!Array.isArray(d.routes)||!Array.isArray(d.trips))throw Error();if(!confirm("L'importazione sostituirà i dati attuali. Continuare?"))return;data=normalizeData(d);currentLineId=data.lines[0]?.id||null;persist();renderLines();if(currentLineId)renderRoutes();alert("Dati importati.");}catch(err){alert("File non valido.");}e.target.value="";};reader.readAsText(file);
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && activeTrip) updateRunUI(); });
+window.addEventListener("pageshow",()=>{ if(activeTrip) updateRunUI(); });
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker non disponibile",err)));
+}
+renderLines();
+persist();
+if(activeTrip){
+  currentRouteId=activeTrip.routeId;
+  const parentRoute=data.routes.find(r=>r.id===currentRouteId);
+  if(parentRoute){
+    updateRunUI();
+    document.getElementById("startDate").textContent="Partenza: "+new Date(activeTrip.startedAt).toLocaleString("it-IT");
+    document.querySelector(".origin-stop small").textContent=(activeTrip.startStopIndex??0)===0?"Partenza · capolinea":"Partenza · fermata scelta";
+    document.getElementById("originStop").textContent=activeTrip.stops[activeTrip.startStopIndex??0]||"—";
+    show("running");
+    timerHandle=setInterval(updateRunUI,500);
+  } else { activeTrip=null; saveActiveTrip(); }
+}
+</script>
+</body>
+</html>

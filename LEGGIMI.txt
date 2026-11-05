@@ -1,0 +1,24 @@
+# TempoCorsa – versione installabile (PWA)
+
+Questa cartella contiene la versione installabile di TempoCorsa.
+
+## Come pubblicarla gratuitamente con GitHub Pages
+1. Crea un nuovo repository GitHub, ad esempio `tempocorsa`.
+2. Carica **tutti** i file e le cartelle di questa cartella mantenendo la struttura:
+   - `index.html`
+   - `manifest.webmanifest`
+   - `sw.js`
+   - `icons/icon-192.png`
+   - `icons/icon-512.png`
+3. Nel repository apri **Settings → Pages**.
+4. In **Build and deployment**, scegli **Deploy from a branch**, seleziona `main` e `/ (root)`, poi salva.
+5. Attendi la pubblicazione: GitHub mostrerà un indirizzo HTTPS del tipo `https://TUO-UTENTE.github.io/tempocorsa/`.
+6. Apri quell'indirizzo sul telefono Android con Chrome. Dal menu ⋮ scegli **Installa app** oppure **Aggiungi a schermata Home**.
+
+## Note importanti
+- Dopo aver aperto l'app una prima volta mentre sei online, i file dell'app vengono memorizzati per l'uso offline.
+- Linee, corse e rilevamenti restano nel deposito locale del browser/app sul telefono. Non cancellare i dati dell'app/browser.
+- L'esportazione JSON è consigliata come backup periodico.
+- Se chiudi o riapri l'app durante una corsa, TempoCorsa ripristina la corsa in corso e ricalcola il tempo usando gli orari reali.
+- Android può sospendere l'aggiornamento visivo mentre l'app è in background o lo schermo è spento. Il cronometro non perde il tempo: quando torni nell'app il display si aggiorna al valore corretto. Non è garantito che i numeri si aggiornino continuamente mentre l'app non è in primo piano.
+- La versione PWA usa lo stesso spazio dati del sito installato: evita di cancellare i dati del sito nelle impostazioni di Chrome.
