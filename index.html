@@ -219,6 +219,12 @@ footer { max-width:850px; margin:0 auto; padding:0 16px 28px; color:var(--muted)
       <h2>Corsa completata</h2><p class="sub" id="resultSubtitle"></p>
       <div class="stats"><div class="stat"><span>Durata totale</span><strong id="resultDuration"></strong></div><div class="stat"><span>Fermate registrate</span><strong id="resultCount"></strong></div></div>
       <div id="resultRecords"></div>
+      <div class="skip-panel" style="margin-top:16px">
+        <h3>Informazioni sul rilevamento</h3>
+        <div class="field"><label for="resultVehicle">Veicolo</label><input id="resultVehicle" type="text" placeholder="Es. autobus 1234" /></div>
+        <div class="field"><label for="resultNotes">Note sulla corsa</label><textarea id="resultNotes" rows="3" placeholder="Aggiungi eventuali note..."></textarea></div>
+        <button class="primary full" onclick="saveResultMetadata()">Salva informazioni</button>
+      </div>
       <button class="primary full" style="margin-top:16px" onclick="showCurrentDetail()">Torna alla corsa</button>
     </div>
   </section>
@@ -227,6 +233,11 @@ footer { max-width:850px; margin:0 auto; padding:0 16px 28px; color:var(--muted)
     <button class="back" onclick="showCurrentDetail()">← Torna alla corsa</button>
     <h2>Archivio rilevamenti</h2><p class="sub" id="archiveName"></p>
     <div id="archiveList" style="margin-top:15px"></div>
+  </section>
+  <section id="archiveDetail" class="hidden">
+    <button class="back" onclick="showArchive()">← Archivio rilevamenti</button>
+    <h2 id="archiveDetailTitle">Rilevamento</h2>
+    <div id="archiveDetailContent" style="margin-top:15px"></div>
   </section>
   <div id="startChooser" class="start-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="startChooserTitle">
     <div class="start-dialog">
@@ -281,7 +292,7 @@ function loadData() {
 }
 function persist(){ localStorage.setItem(KEY, JSON.stringify(data)); }
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function show(id){ ["lines","home","editor","detail","running","result","archive"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+function show(id){ ["lines","home","editor","detail","running","result","archive","archiveDetail"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
 function showLines(){ if(activeTrip && !activeTrip.finished){ if(!confirm("La corsa è ancora in corso. Vuoi tornare alle linee? Il rilevamento continuerà.")) return; } show("lines");renderLines(); }
 function goHome(){ show("home");renderRoutes(); }
 function renderLines(){
@@ -377,7 +388,7 @@ function confirmStartTrip(){
 }
 function startTripAt(startIndex){
  const r=data.routes.find(x=>x.id===currentRouteId); if(!r||!Number.isInteger(startIndex)||startIndex<0||startIndex>=r.stops.length)return;
- activeTrip={id:crypto.randomUUID(),routeId:r.id,routeName:r.name,stops:[...r.stops],startedAt:Date.now(),startStopIndex:startIndex,records:[],nextStopIndex:Math.min(startIndex+1,r.stops.length),finished:false}; saveActiveTrip();
+ activeTrip={id:crypto.randomUUID(),routeId:r.id,routeName:r.name,stops:[...r.stops],startedAt:Date.now(),startStopIndex:startIndex,records:[],nextStopIndex:Math.min(startIndex+1,r.stops.length),vehicle:"",notes:"",finished:false}; saveActiveTrip();
  document.getElementById("startDate").textContent="Partenza: "+new Date(activeTrip.startedAt).toLocaleString("it-IT");
  document.querySelector(".origin-stop small").textContent=startIndex===0?"Partenza · capolinea":"Partenza · fermata scelta";
  document.getElementById("originStop").textContent=r.stops[startIndex]||"—";
@@ -431,25 +442,54 @@ function finishTrip(automatic=false, endedAt=null){
  document.getElementById("resultSubtitle").textContent=activeTrip.routeName+" · "+new Date(activeTrip.startedAt).toLocaleString("it-IT");
  document.getElementById("resultDuration").textContent=fmt(activeTrip.durationMs);
  document.getElementById("resultCount").textContent=activeTrip.records.length;
+ document.getElementById("resultVehicle").value=activeTrip.vehicle||"";
+ document.getElementById("resultNotes").value=activeTrip.notes||"";
  const originIndex=activeTrip.startStopIndex??0;
  document.getElementById("resultRecords").innerHTML=`<div class="record"><strong>${originIndex+1}. ${esc(activeTrip.stops[originIndex])} · Partenza</strong><time>${new Date(activeTrip.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Fermata iniziale${originIndex?` · ${originIndex} fermate precedenti saltate`:""}</div></div>`+activeTrip.records.map((x,i)=>`<div class="record"><strong>${x.stopIndex+1}. ${esc(x.stop)}</strong><time>${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Tratto: ${fmt(x.legMs)} · Dalla partenza: ${fmt(x.elapsedMs)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join("");
  show("result");
 }
 function showCurrentDetail(){activeTrip=null;saveActiveTrip();openRoute(currentRouteId);}
+function saveResultMetadata(){
+ if(!activeTrip)return;
+ activeTrip.vehicle=document.getElementById("resultVehicle").value.trim();
+ activeTrip.notes=document.getElementById("resultNotes").value.trim();
+ const saved=data.trips.find(t=>t.id===activeTrip.id);if(saved){saved.vehicle=activeTrip.vehicle;saved.notes=activeTrip.notes;}
+ persist();saveActiveTrip();alert("Informazioni salvate.");
+}
 function deleteTrip(tripId){
  const trip=data.trips.find(t=>t.id===tripId);
  if(!trip||trip.routeId!==currentRouteId)return;
  const when=new Date(trip.startedAt).toLocaleString("it-IT");
  if(!confirm(`Eliminare definitivamente il rilevamento del ${when}?`))return;
  data.trips=data.trips.filter(t=>t.id!==tripId);
- persist();
- showArchive();
+ persist();showArchive();
 }
 function showArchive(){
  const r=data.routes.find(x=>x.id===currentRouteId);document.getElementById("archiveName").textContent=r?.name||"";
  const trips=data.trips.filter(t=>t.routeId===currentRouteId).sort((a,b)=>b.startedAt-a.startedAt);
- document.getElementById("archiveList").innerHTML=trips.map(t=>`<div class="card"><div class="topline"><strong>${new Date(t.startedAt).toLocaleString("it-IT")}</strong><div class="row" style="flex:0 0 auto;gap:7px"><span class="pill">${fmt(t.durationMs)}</span><button class="danger small" onclick="deleteTrip('${t.id}')">Elimina</button></div></div>${t.records.map((x,i)=>`<div class="record"><strong>${(x.stopIndex??i)+1}. ${esc(x.stop)}</strong><time>${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Tratto: ${fmt(x.legMs)} · Dalla partenza: ${fmt(x.elapsedMs)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join("")}</div>`).join("")||'<div class="card empty">Nessun rilevamento salvato.</div>';
+ document.getElementById("archiveList").innerHTML=trips.map(t=>`<div class="card"><div class="topline"><div><strong>${new Date(t.startedAt).toLocaleDateString("it-IT")}</strong><div class="sub">${new Date(t.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})} · ${esc(t.routeName||r?.name||"")}</div></div><span class="pill">${fmt(t.durationMs??((t.endedAt||t.startedAt)-t.startedAt))}</span></div><div class="row" style="margin-top:12px;gap:7px;flex-wrap:wrap"><button class="ghost small" onclick="openArchiveInfo('${t.id}')">Informazioni</button><button class="ghost small" onclick="openArchiveStops('${t.id}')">Fermate</button><button class="danger small" onclick="deleteTrip('${t.id}')">Elimina</button></div></div>`).join("")||'<div class="card empty">Nessun rilevamento salvato.</div>';
  show("archive");
+}
+function getTrip(tripId){return data.trips.find(t=>t.id===tripId&&t.routeId===currentRouteId);}
+function openArchiveInfo(tripId){
+ const t=getTrip(tripId);if(!t)return;
+ const end=t.endedAt||t.startedAt, duration=t.durationMs??(end-t.startedAt);
+ document.getElementById("archiveDetailTitle").textContent="Informazioni rilevamento";
+ document.getElementById("archiveDetailContent").innerHTML=`<div class="card"><div class="stats"><div class="stat"><span>Inizio</span><strong>${new Date(t.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</strong></div><div class="stat"><span>Fine</span><strong>${new Date(end).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</strong></div><div class="stat"><span>Durata</span><strong>${fmt(duration)}</strong></div></div><div class="field"><label for="archiveVehicle">Veicolo</label><input id="archiveVehicle" type="text" value="${esc(t.vehicle||"")}" placeholder="Es. autobus 1234"></div><div class="field"><label for="archiveNotes">Note sulla corsa</label><textarea id="archiveNotes" rows="4" placeholder="Aggiungi eventuali note...">${esc(t.notes||"")}</textarea></div><button class="primary full" onclick="saveArchiveMetadata('${t.id}')">Salva modifiche</button></div>`;
+ show("archiveDetail");
+}
+function saveArchiveMetadata(tripId){
+ const t=getTrip(tripId);if(!t)return;
+ t.vehicle=document.getElementById("archiveVehicle").value.trim();t.notes=document.getElementById("archiveNotes").value.trim();persist();alert("Informazioni aggiornate.");showArchive();
+}
+function openArchiveStops(tripId){
+ const t=getTrip(tripId);if(!t)return;
+ const startIndex=t.startStopIndex??0, startName=t.stops?.[startIndex]||"Fermata iniziale", end=t.endedAt||t.startedAt;
+ const origin=`<div class="record"><strong>${startIndex+1}. ${esc(startName)} · Partenza</strong><time>${new Date(t.startedAt).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Fermata iniziale${startIndex?` · ${startIndex} fermate precedenti saltate`:""}</div></div>`;
+ const records=(t.records||[]).map(x=>`<div class="record"><strong>${(x.stopIndex??0)+1}. ${esc(x.stop)}</strong><time>${new Date(x.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time><div class="elapsed">Tratto: ${fmt(x.legMs||0)} · Dalla partenza: ${fmt(x.elapsedMs||0)}${x.skippedBefore?` · ${x.skippedBefore} fermate saltate`:""}</div></div>`).join("");
+ document.getElementById("archiveDetailTitle").textContent="Cronologia fermate";
+ document.getElementById("archiveDetailContent").innerHTML=`<div class="card"><p class="sub">${new Date(t.startedAt).toLocaleDateString("it-IT")} · ${esc(t.routeName||"")}</p>${origin}${records||'<p class="sub">Nessuna fermata successiva registrata.</p>'}<div class="record"><strong>Fine rilevamento</strong><time>${new Date(end).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</time></div></div>`;
+ show("archiveDetail");
 }
 function exportData(){
  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
